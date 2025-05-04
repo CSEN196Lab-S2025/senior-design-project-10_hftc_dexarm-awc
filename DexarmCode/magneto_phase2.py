@@ -1,17 +1,17 @@
-import pydexarm_NameTag
-import pydexarm_Signage
+import magneto_library
+import suki_library
 import time
 
 from pydexarm import Dexarm
 
 MAGNETO = Dexarm(port="COM4") # the com # for MAGNETO
 
-pydexarm_Signage.dexarm_init(MAGNETO)
+suki_library.dexarm_init(MAGNETO)
 
-pydexarm_NameTag.small_pressure(MAGNETO)
+magneto_library.small_pressure(MAGNETO)
 
-pydexarm_NameTag.mini_solenoid_ON()
+magneto_library.mini_solenoid_ON()
 
-pydexarm_NameTag.Finished(MAGNETO)
+magneto_library.Finished(MAGNETO)
 
-pydexarm_NameTag.mini_solenoid_OFF()
+magneto_library.mini_solenoid_OFF()
