@@ -17,9 +17,13 @@ class Dexarm:
         self.ser = serial.Serial(port, 115200, timeout=0.5)
         self.is_open = self.ser.isOpen()
         if self.is_open:
-            print('pydexarm: %s open' % self.ser.name)
+            with open("out.txt", "w") as f:
+                f.write(f'pydexarm: %s open % {self.ser.name}')
+            # print('pydexarm: %s open' % self.ser.name)
         else:
-            print('failed to open serial port')
+            with open("out.txt", "w") as f:
+                f.write('failed to open serial port')
+            # print('failed to open serial port')
 
     def _send_cmd(self, data, wait=True):
         """
@@ -40,10 +44,14 @@ class Dexarm:
             if len(serial_str) > 0:   
                 # print('serial_str', serial_str)
                 if serial_str.find("ok") > -1:
-                   print("read first ok")
-                   break
+                #    print("read first ok")
+                    with open("out.txt", "a") as f:
+                        f.write("read first ok")
+                    break
                 else:
-                   print("read -", serial_str)
+                    with open("out.txt", "a") as f:
+                        f.write(f"read -{serial_str}")
+                    # print("read -", serial_str)
                 # return serial_str
 
         if not wait:
@@ -60,10 +68,14 @@ class Dexarm:
             if len(serial_str) > 0:   
                 # print('serial_str', serial_str)
                 if serial_str.find("ok") > -1:
-                   print("read second ok")
-                   break
+                #    print("read second ok")
+                    with open("out.txt", "a") as f:
+                        f.write("read second ok")
+                    break
                 else:
-                   print("read -", serial_str)
+                    # print("read -", serial_str)
+                    with open("out.txt", "a") as f:
+                        f.write(f"read -{serial_str}")
                 # return serial_str
 
     def go_home(self):
@@ -287,34 +299,41 @@ class Dexarm:
         """
         self._send_cmd("M2013\r")
     def conveyor_belt_move(self,  position, speed = 0):
-            if(position>0):
-                self._send_cmd("M2012 F" + str(speed) + 'D1\r')#Go forward
-            else:
-                self._send_cmd("M2012 F" + str(speed) + 'D0\r')#Go backward
+        if(position>0):
+            self._send_cmd("M2012 F" + str(speed) + 'D1\r')#Go forward
+        else:
+            self._send_cmd("M2012 F" + str(speed) + 'D0\r')#Go backward
 
-            # Start Time in ms
+        # Start Time in ms
+        now_ns = time.time_ns() # Time in nanoseconds
+        start_time = int(now_ns / 1000000) #Time in Milliseconds
+
+        #How many ms to run for to get right position; multiply by 2 because speed is halved 
+        runForMS = 2*round((60.0/speed)*abs(position)*1000.0)
+
+        while(True):
+            
             now_ns = time.time_ns() # Time in nanoseconds
-            start_time = int(now_ns / 1000000) #Time in Milliseconds
+            now_ms = int(now_ns / 1000000)
+            timeElapsed = now_ms-start_time
+            if(runForMS<timeElapsed+400):
+                time.sleep(0.25)
+            else:
+                time.sleep(0.01)
 
-            #How many ms to run for to get right position; multiply by 2 because speed is halved 
-            runForMS = 2*round((60.0/speed)*abs(position)*1000.0)
+            if(runForMS<timeElapsed):
+                break
+        # print(start_time,now_ms,now_ms-start_time)
+        with open("out.txt", "a") as f:
+            f.write(f'{start_time},{now_ms},{now_ms-start_time}')
+        self._send_cmd("M2013\r")#Stop
+        # print(position, speed,runForMS )
+        with open("out.txt", "a") as f:
+            f.write(f'{position},{speed},{runForMS}')
 
-            while(True):
-                
-                now_ns = time.time_ns() # Time in nanoseconds
-                now_ms = int(now_ns / 1000000)
-                timeElapsed = now_ms-start_time;
-                if(runForMS<timeElapsed+400):
-                    time.sleep(0.25)
-                else:
-                    time.sleep(0.01)
-
-                if(runForMS<timeElapsed):
-                    break;
-            print(start_time,now_ms,now_ms-start_time)
-            self._send_cmd("M2013\r")#Stop
-            print(position, speed,runForMS )
-
+        #added to clear out buffer so other things can run
+        self.ser.flush()
+        self.ser.reset_input_buffer()
 
 
 
@@ -338,11 +357,13 @@ class Dexarm:
 
     def rotate_to_position(self, position):
         if not (0<= position<= 360):
-            print("position is out of bounds, make sure to put in a value between 0 to 360")
+            # print("position is out of bounds, make sure to put in a value between 0 to 360")
+            with open("out.txt", "a") as f:
+                f.write("position is out of bounds, make sure to put in a value between 0 to 360")
             return
             
         retVal = self._send_cmd(f"M2101 P{position}\r")
-        print('retVal: ', retVal)
+        # print('retVal: ', retVal)
         
         # maybe_angle = self._send_cmd("M2101\r")
         # decoded = maybe_angle[0].decode('utf-8').strip()
